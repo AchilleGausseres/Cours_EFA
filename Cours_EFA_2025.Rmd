@@ -1,0 +1,160 @@
+---
+title: "Cours_EFA"
+author: "Achille Gausseres"
+date: "11/3/2024"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## L'analyse factorielle exploratoire (EFA) en application
+
+Définissez votre espace de travail et appel des librairies 
+```{r}
+setwd("~/OneDrive/PRO/ACO/3A/Analyse_Factorielle/Cours EFA")
+#install.packages("psych")
+library(psych)
+#install.packages("psychTools")
+library(psychTools)
+#install.packages("GPArotation")
+library(GPArotation)
+```
+
+Import de la base de données et réencodage des variables en entier. 
+```{r}
+data_final <- read.csv("data-final.csv", 
+                         sep = "\t", header = F)
+data <- data_final[-1,1:50]
+for (i in 1:length(data)){
+  data[,i] <- as.integer(data[,i])
+}
+describe(data)
+```
+
+Ce jeu de données présente les réponses de 1 015 342 participants à un questionnaire
+de personnalité. Ce questionnaire comporte 50 questions. 
+
+La question que l'on se pose est: les réponses des participants quant à leurs traits de personnalité sont-elles dues à leurs appartenance à un type de personnalité. 
+
+# La matrice de corrélations est-elle adéquate ?
+
+Afin de vérifier qu’il existe bien des corrélations suffisantes entre les variables, il faut utiliser le test de sphéricité de Bartlett. 
+
+Ce test évalue l’hypothèse nulle selon laquelle les corrélations seraient toutes égales
+à zéro. Il devrait être significatif au seuil de p<.001 (c’est-à-dire que H0 devrait
+être rejetée) pour continuer l’analyse.
+
+```{r}
+cortest.bartlett(data)
+```
+
+Le test est significatif. 
+
+Le défaut de ce test est qu’il est sensible à la taille de l’échantillon et par 
+conséquent quasiment toujours significatif si la taille de l’échantillon est grande. 
+Le test de sphéricité de Bartlett est accompagné du test de KaiserMeyer-Olkin (KMO) d’adéquation de la solution factorielle.
+
+```{r}
+KMO(data)
+```
+
+Un indice KMO > 0.80 signifie que la «factoriabilité » est bonne, c’est-à-dire que 
+la structure factorielle est intelligible et stable ; un indice KMO entre 0.60 et 0.80 correspond à une «factoriabilité» dite moyenne ; si l’indice KMO < 0.60, la «factoriabilité» est dite mauvaise et la structure factorielle est difficile à interpréter et instable. 
+
+Le KMO évalue la cohérence de l’ensemble des variables (rapport entre les corrélations entre les variables et les corrélations partielles qui expriment l’unicité de l’apport
+de chacune des variables) et donc s’il existe une solution factorielle acceptable pour représenter les relations entre variables.
+
+Ici le KMO est 0.91, la «factoriabilité » est bonne. 
+
+# Combien de facteurs? Le Scree test (graphique des éboulis) et critère de Kayser
+
+Cette méthode se base sur l’étude d’un graphique. 
+Les valeurs propres sont calculées puis représentées sur un graphique en ordre 
+de valeurs décroissantes.
+
+```{r}
+scree(data)
+```
+
+On retient avec cette méthode le modèle avec le même nombre de facteurs commun que le nombre de valeurs propres avant le dernier écart substantiel (coude). Les limites de cette méthode sont sa subjectivité, car le pattern de valeurs propres peut être ambigu. 
+
+On couple alors cette méthode avec Le critère dit de Kaiser (K>1). 
+Selon ce critère, seuls les facteurs dont la valeur propre est supérieure à 1 devraient être retenus. L’idée de retenir les composantes ou facteurs dont la valeur propre est supérieure à 1 se base notamment sur le postulat qu’une composante ne présente que peu d’intérêt si elle explique une part de variance moindre que ce qu’explique une seule variable. Cette façon permet de déterminer le nombre de facteurs de manière simple et objective.
+
+# L'analyse factorielle
+
+```{r}
+fa6 <- fa(data,
+            nfactors = 6,
+            fm="pa", #pricipal factor solution
+            max.iter = 100,
+            rotate = "varimax")
+fa.diagram(fa6)
+```
+
+```{r}
+fa6$loadings
+```
+
+
+Un modèle à 5 facteurs serait-il mieux ? 
+Il faut se rappeler que tout ça n'est que subjectif. 
+On cherche à mettre les choses en commun pour se l'expliquer du mieux possible 
+en regard de notre protocole expérimental. 
+
+```{r}
+fa5 <- fa(data,
+            nfactors = 5,
+            fm="ml", #pricipal factor solution
+            max.iter = 100,
+            rotate = "varimax")
+fa.diagram(fa5)
+```
+
+```{r}
+fa5$loadings
+```
+
+On trouve un modèle à 5 facteurs. 
+En fait ce que l'on vient de retrouver mathématiquement c'est le Big Five Index. 
+
+```{r}
+data_final <- read.csv("data-final.csv", 
+                         sep = "\t", header = T)
+data <- data_final[,1:50]
+for (i in 1:length(data)){
+  data[,i] <- as.integer(data[,i])
+}
+
+fa5 <- fa(data,
+            nfactors = 5,
+            fm="pa", #pricipal factor solution
+            max.iter = 100,
+            rotate = "varimax")
+fa.diagram(fa5)
+```
+
+
+# Modèle Big Five 
+
+En psychologie, Big Five désigne un modèle descriptif de la personnalité en cinq traits centraux, empiriquement proposé par Lewis Goldberg en 1981 puis développé par Costa et McCrae dans les années 1987-1992. Il constitue non une théorie mais un repère pour la description et l'étude théorique de la personnalité. 
+
+Le modèle est parfois appelé « modèle OCEAN », acronyme du nom de ses différentes dimensions1.
+
+(O) Ouverture : appréciation de l'art, de l'émotion, de l'aventure, des idées peu communes ou des idées nouvelles, curiosité et imagination 
+
+(C) Conscienciosité (conscience morale, virtus, c'est-à-dire vertu au sens romain) : autodiscipline, respect des obligations, organisation plutôt que spontanéité ; orienté vers des buts 
+
+(E) Extraversion : énergie, émotions positives, tendance à chercher la stimulation et la compagnie des autres
+
+(A) Agréabilité (amabilité) : une tendance à être compatissant et coopératif plutôt que soupçonneux et antagonique envers les autres 
+
+(N) Neuroticisme ou névrosisme : contraire de stabilité émotionnelle : tendance à éprouver facilement des émotions désagréables comme la colère, l'inquiétude ou la dépression, vulnérabilité.
+
+
+
+
+
+
